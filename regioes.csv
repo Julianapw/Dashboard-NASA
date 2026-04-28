@@ -1,0 +1,24 @@
+
+LAT,LON,ESTADO,CIDADE,REGIAO
+
+-3.0,-60.0,AM,Manaus,Norte
+
+-15.5,-56.0,MT,Cuiabá,Centro-Oeste
+
+-23.5,-46.5,SP,São Paulo,Sudeste
+
+-12.9,-38.5,BA,Salvador,Nordeste
+
+-30.0,-51.2,RS,Porto Alegre,Sul
+
+-20.3,-40.3,ES,Vitória,Sudeste
+
+EOF tipo esse
+cat <<EOF > regioes.csv
+LAT,LON,ESTADO,CIDADE,REGIAO
+-3.0,-60.0,AM,Manaus,Norte
+-15.5,-56.0,MT,Cuiabá,Centro-Oeste
+-23.5,-46.5,SP,São Paulo,Sudeste
+-12.9,-38.5,BA,Salvador,Nordeste
+-30.0,-51.2,RS,Porto Alegre,Sul
+-20.3,-40.3,ES,Vitória,Sudeste
