@@ -415,7 +415,7 @@ render_page()
 
 @st.cache_data
 def carregar_dados():
-    df = pd.read_csv("dados_processados.csv")
+    df = pd.read_csv("../dados_processados.csv")
     df['DATE'] = pd.to_datetime(df['DATE'])
     return df
 
