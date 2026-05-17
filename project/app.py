@@ -4,6 +4,7 @@ import dash_bootstrap_components as dbc
 import pandas as pd
 from datetime import datetime
 import os
+import plotly.express as px
 
 THEMES = {
     "noturno": {
@@ -253,7 +254,52 @@ def render_page(page, estados, cidades, start_date, end_date, current_theme):
             content.append(dbc.Row(cards, className="mb-4"))
 
     elif page == "temperaturas":
-        content.append(html.P("Dados de temperatura mínima, máxima e média"))
+        df_filtrado['ANO'] = df_filtrado['DATE'].dt.year
+        
+        fig_linha = px.line(
+            df_filtrado, 
+            x='DATE', 
+            y='T2M', 
+            color='CIDADE',
+            title='Evolução Histórica da Temperatura Média'
+        )
+        fig_linha.update_layout(
+            plot_bgcolor='rgba(0,0,0,0)',
+            paper_bgcolor='rgba(0,0,0,0)',
+            font_color=theme['text_primary'],
+            title_font_color=theme['primary'],
+            yaxis_title='Temperatura Média (°C)',
+            xaxis_title='Data'
+        )
+
+        fig_box = px.box(
+            df_filtrado, 
+            x='ANO', 
+            y='T2M', 
+            color='CIDADE',
+            title='Distribuição Anual e Extremos Climáticos'
+        )
+        fig_box.update_layout(
+            plot_bgcolor='rgba(0,0,0,0)',
+            paper_bgcolor='rgba(0,0,0,0)',
+            font_color=theme['text_primary'],
+            title_font_color=theme['primary'],
+            yaxis_title='Temperatura Média Diária (°C)',
+            xaxis_title='Ano'
+        )
+
+        content.extend([
+            html.Div([
+                html.H4("Variação Temporal e Eventos Extremos", style={"color": theme['primary']}),
+                html.P("O gráfico de linhas evidencia a sazonalidade e a tendência geral das temperaturas no período selecionado. O gráfico de caixa agrupa os dados por ano, permitindo visualizar a dispersão estatística, o deslocamento das medianas e a identificação precisa de outliers que representam dias de calor ou frio anômalos.", style={"color": theme['text_secondary']})
+            ], style={"marginBottom": "20px"}),
+            dbc.Row([
+                dbc.Col(dcc.Graph(figure=fig_linha), width=12, style={"marginBottom": "30px"})
+            ]),
+            dbc.Row([
+                dbc.Col(dcc.Graph(figure=fig_box), width=12)
+            ])
+        ])
     
     elif page == "precipitação":
         content.append(html.P("Volume de chuvas e padrões de precipitação"))
