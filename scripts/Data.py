@@ -5,9 +5,21 @@ import numpy as np
 import time
 import os
 
+# def calculate_heat_index(temp, rh):
+#     """Calcula a Sensação Térmica."""
+#     if temp < 20: return temp
+#     hi = temp + 0.5555 * (6.11 * np.exp(5417.7530 * (1/273.16 - 1/(273.15 + rh))) - 10)
+#     return hi
+
 def calculate_heat_index(temp, rh):
-    if temp < 20: return temp
-    hi = temp + 0.5555 * (6.11 * np.exp(5417.7530 * (1/273.16 - 1/(273.15 + rh))) - 10)
+    """Calcula a Sensação Térmica (Humidex) corrigida."""
+    if temp < 20: 
+        return temp
+    
+    # 1. Calcula a pressão de vapor de saturação baseada na temperatura atual (em Celsius)
+    e_sat = 6.11 * np.exp(5417.7530 * (1/273.16 - 1/(273.15 + temp)))
+    e_actual = e_sat * (rh / 100.0)
+    hi = temp + 0.5555 * (e_actual - 10)
     return hi
 
 def fetch_nasa_point_data(lat, lon, start_date="20190101", end_date="20240331"):
