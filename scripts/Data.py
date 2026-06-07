@@ -3,15 +3,14 @@ import pandas as pd
 import io
 import numpy as np
 import time
+import os
 
 def calculate_heat_index(temp, rh):
-    """Calcula a Sensação Térmica."""
     if temp < 20: return temp
     hi = temp + 0.5555 * (6.11 * np.exp(5417.7530 * (1/273.16 - 1/(273.15 + rh))) - 10)
     return hi
 
 def fetch_nasa_point_data(lat, lon, start_date="20190101", end_date="20240331"):
-    """Coleta dados de um ponto específico por 5 anos."""
     base_url = "https://power.larc.nasa.gov/api/temporal/daily/point"
     params = {
         "start": start_date, "end": end_date,
@@ -31,13 +30,16 @@ def fetch_nasa_point_data(lat, lon, start_date="20190101", end_date="20240331"):
 if __name__ == "__main__":
     print("Iniciando Pipeline Histórico (2019-2024)...")
     
-    df_regioes = pd.read_csv("regioes.csv")
+    current_dir = os.path.dirname(__file__)
+    data_dir = os.path.abspath(os.path.join(current_dir, "..", "data"))
+    os.makedirs(data_dir, exist_ok=True)
+    
+    df_regioes = pd.read_csv(os.path.join(data_dir, "regioes.csv"))
     all_data = []
 
     for _, cidade in df_regioes.iterrows():
-        print(f"Baixando histórico de 5 anos para: {cidade['CIDADE']}...")
+        print(f"Baixando historico de 5 anos para: {cidade['CIDADE']}...")
         df_cidade = fetch_nasa_point_data(cidade['LAT'], cidade['LON'])
-        
         if df_cidade is not None:
             df_cidade['ESTADO'] = cidade['ESTADO']
             df_cidade['CIDADE'] = cidade['CIDADE']
@@ -50,24 +52,20 @@ if __name__ == "__main__":
         final_df = pd.concat(all_data, ignore_index=True)
         final_df = final_df.replace(-999, np.nan).dropna(subset=['T2M', 'RH2M'])
         final_df['DATE'] = pd.to_datetime(final_df['YEAR'].astype(str) + final_df['DOY'].astype(str), format='%Y%j')
-
-        # --- MÉTRICAS MASTIGADAS PARA O DASHBOARD ---
         
-        # 1. Sensação Térmica
+        final_df = final_df.drop_duplicates(subset=['CIDADE', 'DATE'])
         final_df['HEAT_INDEX'] = final_df.apply(lambda x: calculate_heat_index(x['T2M'], x['RH2M']), axis=1)
         
-        # 2. Métrica de Tendência: Média Móvel de 365 dias (Suaviza estações para ver o aquecimento)
-        # Isso mostra se a 'linha base' de cada cidade está subindo
         final_df = final_df.sort_values(['CIDADE', 'DATE'])
         final_df['TENDENCIA_AQUECIMENTO'] = final_df.groupby('CIDADE')['T2M'].transform(lambda x: x.rolling(window=365, min_periods=1).mean())
-
-        # 3. Métrica de Impacto: Diferença vs Primeiro Ano (Início do Aquecimento)
-        # Calcula quanto a temperatura de hoje está diferente da média do primeiro ano (2019)
-        # Isso gera um insight automático para o Dashboard
+        
         media_2019 = final_df[final_df['YEAR'] == 2019].groupby('CIDADE')['T2M'].mean()
         final_df['AUMENTO_VS_2019'] = final_df.apply(lambda x: x['T2M'] - media_2019.get(x['CIDADE'], x['T2M']), axis=1)
+        
+        final_df['INDICE_COMPOSTO'] = (final_df['T2M'] * 0.5) + (final_df['RH2M'] * 0.3) - (final_df['PRECTOTCORR'] * 0.2)
+        final_df['DIA_CHUVOSO'] = final_df['PRECTOTCORR'].apply(lambda x: 1 if x > 2.5 else 0)
 
-        final_df.to_csv("dados_processados.csv", index=False)
-        print(f"\nPipeline Histórico Concluído! Total: {len(final_df)} registros.")
+        final_df.to_csv(os.path.join(data_dir, "dados_processados.csv"), index=False)
+        print(f"\nPipeline Historico Concluido! Total: {len(final_df)} registros limpos.")
     else:
         print("Falha na coleta.")
