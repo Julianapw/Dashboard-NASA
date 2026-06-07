@@ -1,10 +1,16 @@
 import pandas as pd
+import os
 
 def gerar_insights_etapa_5():
+    current_dir = os.path.dirname(__file__)
+    data_dir = os.path.abspath(os.path.join(current_dir, "..", "data"))
+    caminho_csv = os.path.join(data_dir, "dados_processados.csv")
+
     try:
-        df = pd.read_csv("dados_processados.csv")
+        df = pd.read_csv(caminho_csv)
     except FileNotFoundError:
-        print("Erro: O arquivo dados_processados.csv não foi encontrado. Rode o pipeline primeiro.")
+        print(f"Erro: O arquivo dados_processados.csv não foi encontrado em: {caminho_csv}")
+        print("Rode o pipeline (Data.py) primeiro.")
         return
 
     print("=" * 60)
@@ -44,7 +50,8 @@ def gerar_insights_etapa_5():
     ranking_top_critico = ranking_criticidade.sort_values(by='Total_Dias_Criticos', ascending=False)
     
     print(f"\nTop 5 Cidades onde o Índice de Calor é mais crítico (Limiar >= {LIMIAR_CRITICO}°C):")
-    for idx, row in ranking_top_critico.head(5).iterrows():
+
+    for idx, row in ranking_top_critico.head(5).reset_index(drop=True).iterrows():
         print(f" {idx+1}. {row['CIDADE']} - {row['ESTADO']} ({row['REGIAO']})")
         print(f"    -> Dias críticos: {row['Total_Dias_Criticos']} de {row['Total_Dias_Monitorados']} ({row['PCT_DIAS_CRITICOS']:.1f}% do tempo)")
         print(f"    -> Média do Índice de Calor: {row['Media_Indice_Calor']:.1f}°C | Pico Máximo: {row['Max_Indice_Calor']:.1f}°C")
